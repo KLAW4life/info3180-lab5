@@ -5,9 +5,11 @@ Werkzeug Documentation:  https://werkzeug.palletsprojects.com/
 This file creates your application.
 """
 
-from app import app
+from app import app, db
 from flask import render_template, request, jsonify, send_file
 import os
+from app.forms import MovieForm
+from app.models import Movies
 
 
 ###
@@ -37,6 +39,7 @@ def form_errors(form):
             error_messages.append(message)
 
     return error_messages
+
 
 @app.route('/<file_name>.txt')
 def send_text_file(file_name):
