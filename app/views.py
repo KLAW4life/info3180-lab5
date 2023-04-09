@@ -8,6 +8,7 @@ This file creates your application.
 import datetime
 from app import app, db
 from flask import render_template, request, jsonify, send_file, flash, redirect, url_for
+from flask_wtf.csrf import generate_csrf
 import os
 from app.forms import MovieForm
 from app.models import Movies
@@ -51,6 +52,9 @@ def movies():
         "errors": form_errors(form)
     }), 400
 
+@app.route('/api/v1/csrf-token', methods=['GET'])
+def get_csrf():
+    return jsonify({'csrf_token': generate_csrf()})
 
 ###
 # The functions below should be applicable to all Flask apps.
