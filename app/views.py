@@ -7,7 +7,7 @@ This file creates your application.
 
 import datetime
 from app import app, db
-from flask import render_template, request, jsonify, send_file, flash, redirect, url_for
+from flask import render_template, request, jsonify, send_file, flash, redirect, url_for, send_from_directory
 from flask_wtf.csrf import generate_csrf
 import os
 from app.forms import MovieForm
@@ -52,6 +52,26 @@ def movies():
         "errors": form_errors(form)
     }), 400
 
+@app.route('/api/v1/movies', methods=['GET'])
+def get_movies():
+    
+    movies = Movies.query.all()
+    movies =  db.session.execute(db.select(Movies)).scalars()
+    movie_list = []
+
+    for movie in movies:
+        movie_data = {
+            'id': movie.id,
+            'title': movie.title,
+            'description': movie.description,
+            'poster': url_for('get__image', filename=movie.poster)
+        }
+        movie_list.append(movie_data)
+    print(movie_list)
+    return jsonify({'movies' : movie_list})
+
+    
+
 @app.route('/api/v1/csrf-token', methods=['GET'])
 def get_csrf():
     return jsonify({'csrf_token': generate_csrf()})
@@ -75,6 +95,9 @@ def form_errors(form):
 
     return error_messages
 
+@app.route('/api/v1/posters/<filename>')
+def get_image(filename):
+    return send_from_directory(os.path.join(os.getcwd(),app.config['UPLOAD_FOLDER']), filename)
 
 @app.route('/<file_name>.txt')
 def send_text_file(file_name):

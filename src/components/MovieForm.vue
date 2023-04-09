@@ -79,7 +79,7 @@ function saveMovie(){
             return response.json();
         })
         .then(function (data) {
-            // display a success message
+            
             if ("errors" in data){
                 errorMessage.value = [...data.errors];
             } else {
