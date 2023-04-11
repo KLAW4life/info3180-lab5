@@ -7,7 +7,7 @@ This file creates your application.
 
 import datetime
 from app import app, db
-from flask import render_template, request, jsonify, send_file, flash, redirect, url_for, send_from_directory
+from flask import render_template, request, jsonify, flash, url_for, send_from_directory
 from flask_wtf.csrf import generate_csrf
 import os
 from app.forms import MovieForm
@@ -23,52 +23,53 @@ from werkzeug.utils import secure_filename
 def index():
     return jsonify(message="This is the beginning of our API")
 
-@app.route('/api/v1/movies', methods=['POST'])
+@app.route('/api/v1/movies', methods=['POST', 'GET'])
 def movies():
     form = MovieForm()
 
-    if form.validate_on_submit():
-        title = form.title.data
-        description = form.description.data
-        poster = form.poster.data
+    if request.method == 'POST':
+
+        if form.validate_on_submit():
+            title = form.title.data
+            description = form.description.data
+            poster = form.poster.data
+            
+
+            filename = secure_filename(poster.filename)
+            poster.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            created_at = datetime.datetime.now()
+
+            new_movie = Movies(title, description, filename, created_at) 
+            db.session.add(new_movie)
+            db.session.commit()    
+            flash('New Movie Title Successfully Added!', 'success')
+            return jsonify({
+                "message": "Movie Successfully added",
+                "title": new_movie.title,
+                "poster": new_movie.poster,
+                "description": new_movie.description
+            }), 200
         
-
-        filename = secure_filename(poster.filename)
-        poster.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        created_at = datetime.datetime.now()
-
-        new_movie = Movies(title, description, filename, created_at) 
-        db.session.add(new_movie)
-        db.session.commit()    
-        flash('New Movie Title Successfully Added!', 'success')
         return jsonify({
-            "message": "Movie Successfully added",
-            "title": new_movie.title,
-            "poster": new_movie.poster,
-            "description": new_movie.description
-        }), 200
+            "errors": form_errors(form)
+        }), 400
     
-    return jsonify({
-        "errors": form_errors(form)
-    }), 400
+    if request.method == 'GET':
+        print("in GET")
+        movies =  db.session.execute(db.select(Movies)).scalars()
+        # print(movies)
+        movie_list = []
 
-@app.route('/api/v1/movies', methods=['GET'])
-def get_movies():
-    
-    movies = Movies.query.all()
-    movies =  db.session.execute(db.select(Movies)).scalars()
-    movie_list = []
-
-    for movie in movies:
-        movie_data = {
-            'id': movie.id,
-            'title': movie.title,
-            'description': movie.description,
-            'poster': url_for('get__image', filename=movie.poster)
-        }
-        movie_list.append(movie_data)
-    print(movie_list)
-    return jsonify({'movies' : movie_list})
+        for movie in movies:
+            movie_data = {
+                'id': movie.id,
+                'title': movie.title,
+                'description': movie.description,
+                'poster': url_for('get_image', filename=movie.poster)
+            }
+            movie_list.append(movie_data)
+        # print(movie_list)
+        return jsonify(movies=movie_list)
 
     
 
